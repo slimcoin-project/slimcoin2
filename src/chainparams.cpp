@@ -23,7 +23,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     txNew.vin.resize(1);
     txNew.vout.resize(1);
     txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(9999) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    txNew.vout[0].nValue = genesisReward;
+    txNew.vout[0].nValue = genesisReward; // SLM note: SLM's genesis block says txNew.vout[0].SetEmpty()
     txNew.vout[0].scriptPubKey = genesisOutputScript;
     txNew.nTime = nTimeTx;
 
@@ -51,10 +51,28 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  */
 static CBlock CreateGenesisBlock(uint32_t nTimeTx, uint32_t nTimeBlock, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "Matonis 07-AUG-2012 Parallel Currencies And The Roadmap To Monetary Freedom";
+    const char *pszTimestamp = "RT: 2 southeast Ukranian regions to hold referendum May 11 as planned"; // SLM
+    // const char* pszTimestamp = "Matonis 07-AUG-2012 Parallel Currencies And The Roadmap To Monetary Freedom";
     const CScript genesisOutputScript = CScript();
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTimeTx, nTimeBlock, nNonce, nBits, nVersion, genesisReward);
 }
+
+/**
+* Param change in SLM
+*/
+static inline int64 getTargetTimespan(s32int lastNHeight)
+{
+    //the nTargetTimespan value cannot be too small since in the GetNextTargetRequired function,
+    // the nActualSpacing variable could be negative, but we do not want to be multiplying
+    // bnNew by a negative number in: bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+
+    //from 4259 and on, use new 6 hour retarget time
+    if (lastNHeight >= 4258)
+        return 6 * 60 * 60;
+    else
+        return 30 * 60; //old 30 minute retarget time
+}
+
 
 /**
  * Main network on which people trade goods and services.
@@ -66,66 +84,103 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         //consensus.BIP16Height = 0;
-        consensus.BIP34Height = 339994;
-        consensus.BIP34Hash = uint256S("000000000000000237f50af4cfe8924e8693abc5bd8ae5abb95bc6d230f5953f");
-        consensus.powLimit =            uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 32;
-        consensus.bnInitialHashTarget = uint256S("0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 40;
+        //consensus.BIP34Height = 0; // 339994;
+        //consensus.BIP34Hash = 0; // uint256S("000000000000000237f50af4cfe8924e8693abc5bd8ae5abb95bc6d230f5953f");
+        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 20;
+        // consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 32;
+        consensus.bnInitialHashTarget = uint256S("000007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 21;
+        // consensus.bnInitialHashTarget = uint256S("0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 40;
 
-        consensus.nTargetTimespan = 7 * 24 * 60 * 60;  // one week
-        consensus.nStakeTargetSpacing = 10 * 60; // 10-minute block spacing
-        consensus.nTargetSpacingWorkMax = 12 * consensus.nStakeTargetSpacing; // 2-hour
-        consensus.nPowTargetSpacing = consensus.nStakeTargetSpacing;
-        consensus.nStakeMinAge = 60 * 60 * 24 * 30; // minimum age for coin age
-        consensus.nStakeMaxAge = 60 * 60 * 24 * 90;
-        consensus.nModifierInterval = 6 * 60 * 60; // Modifier interval: time to elapse before new modifier is computed
-        consensus.nCoinbaseMaturity = 500;
+        consensus.nTargetTimespan = getTargetTimespan(lastNHeight); // TODO need additional parameter
+        // consensus.nTargetTimespan = 7 * 24 * 60 * 60;  // one week
+        consensus.nStakeTargetSpacing = 90; // SLM: 90 second block spacing (STAKE_TARGET_SPACING)
+        // consensus.nStakeTargetSpacing = 10 * 60; // 10-minute block spacing
+        consensus.nTargetSpacingWorkMax = 10 * consensus.nStakeTargetSpacing; // SLM: 15 min
+        // consensus.nTargetSpacingWorkMax = 12 * consensus.nStakeTargetSpacing; // 2-hour
+        consensus.nPoWTargetSpacing = min(nTargetSpacingWorkMax, consensus.nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight)); // TODO
+        //consensus.nPowTargetSpacing = consensus.nStakeTargetSpacing;
+        consensus.nStakeMinAge = 60 * 60 * 24 * 7; // SLM: minimum age for coin age = 7 days
+        // consensus.nStakeMinAge = 60 * 60 * 24 * 30; // minimum age for coin age
+        consensus.nStakeMaxAge = 60 * 60 * 24 * 90; // SLM like PPC
+        consensus.nModifierInterval = 6 * 60 * 60; // Modifier interval: time to elapse before new modifier is computed - SLM like PPC
+        consensus.nCoinbaseMaturity = 500; // SLM like PPC
 
-        consensus.fPowAllowMinDifficultyBlocks = false;
-        consensus.fPowNoRetargeting = false;
-        consensus.nRuleChangeActivationThreshold = 1815; // 90% of 2016
-        consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
+        consensus.fPowAllowMinDifficultyBlocks = false; // TODO: not in SLM, perhaps set to true?
+        consensus.fPowNoRetargeting = false; // TODO: not in SLM, perhaps set to true?
+        consensus.nRuleChangeActivationThreshold = 1815; // 90% of 2016 - TODO: probably softfork-related
+        consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing - TODO: probably softfork-related
 
-        consensus.SegwitHeight = 455470;
+        consensus.SegwitHeight = 0; // 455470; // TODO: unset this or set to extremely high number?
 
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000516e58fb3669ea"); // 650000
-        consensus.defaultAssumeValid = uint256S("0x3125be5493e80431952593cce42b160019671108103735509238830939e1c9a3");  // 650000
+        // TODO nMinimumChainWork is the work done at approx. the block in defaultAssumeValid.
+        // https://bitcoin.stackexchange.com/questions/72051/what-is-nminimumchainwork
+        // https://bitcoin.stackexchange.com/questions/51112/how-to-get-bip34hash-and-nminimumchainwork
+        // we probably need to run getblockchaininfo once to get this value, as getinfo/getmininginfo doesn't include it.
+        //consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000516e58fb3669ea"); // 650000
+        consensus.defaultAssumeValid = uint256S("0000000197d6fbba2311e3fdcdb2e0fde938fb8b2dd7f5ea70531d16a9b6c95e"); // SLM block 3000000
+        //consensus.defaultAssumeValid = uint256S("0x3125be5493e80431952593cce42b160019671108103735509238830939e1c9a3");  // 650000
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0xe6;
-        pchMessageStart[1] = 0xe8;
-        pchMessageStart[2] = 0xe9;
-        pchMessageStart[3] = 0xe5;
-        nDefaultPort = 9901;
-        nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 2;
 
-        genesis = CreateGenesisBlock(1345083810, 1345084287, 2179302059u, 0x1d00ffff, 1, 0);
-        consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x0000000032fe677166d54963b62a4677d8957e87c508eaa4fd7eb1c880cd27e3"));
-        assert(genesis.hashMerkleRoot == uint256S("0x3c2d8f85fab4d17aac558cc648a1a58acff0de6deb890c29985690052c5993c2"));
+        // likely we only need the pchMessageStartSLIMCoin string, as the switch time is not block time but system time.
+        // SLIMCoin message start (switch from Bitcoin's in v0.2) //
+        //pchMessageStartBitcoin[4] = { 0x9f, 0xeb, 0x1b, 0x8a }; // do we still need this?
+        //pchMessageStartSLIMCoin[4] = { 0x6e, 0x8b, 0x92, 0xa5 }; // this is also used in main.cpp LoadExternalBlockFile
+        //nMessageStartSwitchTime = 1400000000;
+
+        // original SLM:
+        // pchMessageStart[4] = { 0x6e, 0x8b, 0x92, 0xa5 }
+        pchMessageStart[0] = 0x6e;
+        pchMessageStart[1] = 0x8b;
+        pchMessageStart[2] = 0x92;
+        pchMessageStart[3] = 0xa5;
+
+        //pchMessageStart[0] = 0xe6; // original PPC { 0xe6, 0xe8, 0xe9, 0xe5 }
+        //pchMessageStart[1] = 0xe8;
+        //pchMessageStart[2] = 0xe9;
+        //pchMessageStart[3] = 0xe5;
+
+        nDefaultPort = 41682; // 9901;
+        nPruneAfterHeight = 100000; // can probably stay at that number, before this block nothing is pruned.
+        m_assumed_blockchain_size = 5; // 2; // this seems to be expected chain size in GB (10% overhead recommended)
+
+
+        // CreateGenesisBlock(uint32_t nTimeTx, uint32_t nTimeBlock, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+        genesis = CreateGenesisBlock(1399578460, 1399578460, 116872u, 0x1e0fffff, 1, 0); // the "u" is unsigned. TODO -> in original code it's without u
+        // genesis = CreateGenesisBlock(1345083810, 1345084287, 2179302059u, 0x1d00ffff, 1, 0); // TODO (see params above) // PPC
+        consensus.hashGenesisBlock = genesis.GetHash(); // TODO do we need Dcrypt for this?
+        assert(consensus.hashGenesisBlock == uint256S("0x00000766be5a4bb74c040b85a98d2ba2b433c5f4c673912b3331ea6f18d61bea")); // SLM
+        //assert(consensus.hashGenesisBlock == uint256S("0x0000000032fe677166d54963b62a4677d8957e87c508eaa4fd7eb1c880cd27e3"));
+        assert(genesis.hashMerkleRoot == uint256S("0xbae3867d5e5d35c321adaf9610b9e4147a855f9ad319fdcf70913083d783753f")); // SLM
+        //assert(genesis.hashMerkleRoot == uint256S("0x3c2d8f85fab4d17aac558cc648a1a58acff0de6deb890c29985690052c5993c2"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
         // This is fine at runtime as we'll fall back to using them as an addrfetch if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("seed.peercoin.net");
-        vSeeds.emplace_back("seed2.peercoin.net");
-        vSeeds.emplace_back("seed.peercoin-library.org");
-        vSeeds.emplace_back("seed.ppcoin.info");
+        //vSeeds.emplace_back("seed.peercoin.net"); // SLM doesn't have seed nodes
+        //vSeeds.emplace_back("seed2.peercoin.net");
+        //vSeeds.emplace_back("seed.peercoin-library.org");
+        //vSeeds.emplace_back("seed.ppcoin.info");
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,55);  // peercoin: addresses begin with 'P'
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,63); // 0x3F // slimcoin: addresses begin with 'S'
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,125); // 0x7D // slimcoin: addresses begin with 's'
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,191); // 0xBF // slimcoin: wif starts with 'V'
+        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E}; // TODO: not sure about support here (BIP32). These are ppc values.
+        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4}; // TODO: idem.
+        /*base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,55);  // peercoin: addresses begin with 'P'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,117); // peercoin: addresses begin with 'p'
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,183);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
+        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};*/
 
         // human readable prefix to bench32 address
-        bech32_hrp = "pc";
+        bech32_hrp = "sl"; // "pc"; # TODO up for discussion! (anyway Segwit won't be enabled soon)
 
         vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_main), std::end(chainparams_seed_main));
 
@@ -187,14 +242,24 @@ public:
          // TODO to be specified in a future patch.
         };
 
+
         chainTxData = ChainTxData{
+            // Data as of block 0000000197d6fbba2311e3fdcdb2e0fde938fb8b2dd7f5ea70531d16a9b6c95e (height 3000000).
+            1672183248, // * UNIX timestamp of last known number of transactions
+            3600000,    // * total number of transactions between genesis and that timestamp
+                        //   (the tx=... number in the ChainStateFlushed debug.log lines)
+                        // TODO: these values was estimated (1.2 txes per block, 90 sec block time)
+            0.013 // * estimated number of transactions per second after that timestamp
+                        //   2145533/(1666903503-1345400356) = 0.006673443
+        };
+        /*chainTxData = ChainTxData{
             // Data as of block 3125be5493e80431952593cce42b160019671108103735509238830939e1c9a3 (height 650000).
             1666903503, // * UNIX timestamp of last known number of transactions
             2145533,    // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the ChainStateFlushed debug.log lines)
             0.006673443 // * estimated number of transactions per second after that timestamp
                         //   2145533/(1666903503-1345400356) = 0.006673443
-        };
+        };*/
     }
 };
 
@@ -208,59 +273,61 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         //consensus.BIP16Height = 0;
-        consensus.BIP34Height = 293368;
-        consensus.BIP34Hash = uint256S("00000002c0b976c7a5c9878f1cec63fb4d88d68d614aedeaf8158c42d904795e");
-        consensus.powLimit =            uint256S("0000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 28;
-        consensus.bnInitialHashTarget = uint256S("00000007ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 29;
+        //consensus.BIP34Height = 0 // 293368;
+        //consensus.BIP34Hash = 0 // uint256S("00000002c0b976c7a5c9878f1cec63fb4d88d68d614aedeaf8158c42d904795e");
+        consensus.powLimit =            uint256S("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 16
+        consensus.bnInitialHashTarget = uint256S("00007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 17;
 
-        consensus.nTargetTimespan = 7 * 24 * 60 * 60;  // one week
-        consensus.nStakeTargetSpacing = 10 * 60;  // 10-minute block spacing
-        consensus.nTargetSpacingWorkMax = 12 * consensus.nStakeTargetSpacing; // 2-hour
-        consensus.nPowTargetSpacing = consensus.nStakeTargetSpacing;
-        consensus.nStakeMinAge = 60 * 60 * 24; // test net min age is 1 day
-        consensus.nStakeMaxAge = 60 * 60 * 24 * 90;
-        consensus.nModifierInterval = 60 * 20; // Modifier interval: time to elapse before new modifier is computed
-        consensus.nCoinbaseMaturity = 60;
+        consensus.nTargetTimespan =  getTargetTimespan(lastNHeight); // TODO, see above.
+        consensus.nStakeTargetSpacing = 90 // 10 * 60;  // 10-minute block spacing
+        consensus.nTargetSpacingWorkMax = 10 * consensus.nStakeTargetSpacing; // 2-hour
+        consensus.nPowTargetSpacing = min(nTargetSpacingWorkMax, consensus.nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight)); // TODO
+        consensus.nStakeMinAge = 60 * 60 * 24; // test net min age is 1 day // SLM too.
+        consensus.nStakeMaxAge = 60 * 60 * 24 * 90; // SLM seems unchanged.
+        consensus.nModifierInterval = 60 * 20; // Modifier interval: time to elapse before new modifier is computed // SLM too.
+        consensus.nCoinbaseMaturity = 60; // SLM too
 
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
 
-        consensus.SegwitHeight = 394215;
+        consensus.SegwitHeight = 0 // 394215; // TODO see above
 
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000a39348f70f067a");  // 500000
-        consensus.defaultAssumeValid = uint256S("0xa40f64181ee4a3bedda2eae0107d9da0e049fe285b6e6e2a7f1f11697f22c7ed"); // 500000
+        // consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000a39348f70f067a");  // 500000
+        consensus.defaultAssumeValid = uint256S("0x0000001fb0391ee881524a21acddfd07ca8a3443910cb765a1568f17b3c209bc"); // slm testnet block 1000
 
-        pchMessageStart[0] = 0xcb;
-        pchMessageStart[1] = 0xf2;
-        pchMessageStart[2] = 0xc0;
-        pchMessageStart[3] = 0xef;
-        nDefaultPort = 9903;
+        // pchMessageStart[4] = { 0x4d, 0x2a, 0xe1, 0xab };
+        pchMessageStart[0] = 0x4d;
+        pchMessageStart[1] = 0x2a;
+        pchMessageStart[2] = 0xe1;
+        pchMessageStart[3] = 0xab;
+
+        nDefaultPort = 41684 // 9903;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 1;
 
-        genesis = CreateGenesisBlock(1345083810, 1345090000, 122894938, 0x1d0fffff, 1, 0);
+        genesis = CreateGenesisBlock(1390500425, 1390500425, 63626, 0x1f00ffff, 1, 0);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x00000001f757bb737f6596503e17cd17b0658ce630cc727c0cca81aec47c9f06"));
-        assert(genesis.hashMerkleRoot == uint256S("0x3c2d8f85fab4d17aac558cc648a1a58acff0de6deb890c29985690052c5993c2"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000d7e8a80fec4057cb6d560822705596040bf41f0ebb2465dcdf46e4c517e"));
+        assert(genesis.hashMerkleRoot == uint256S("0xce86aa96a71e5c74ea535ed5f23d5b1b6ca279ad16cac3cb95e123d80027f014"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.emplace_back("tseed.peercoin.net");
-        vSeeds.emplace_back("tseed2.peercoin.net");
-        vSeeds.emplace_back("tseed.peercoin-library.org");
-        vSeeds.emplace_back("testseed.ppcoin.info");
+        //vSeeds.emplace_back("tseed.peercoin.net");
+        //vSeeds.emplace_back("tseed2.peercoin.net");
+        //vSeeds.emplace_back("tseed.peercoin-library.org");
+        //vSeeds.emplace_back("testseed.ppcoin.info");
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111); // SLM: all unchanged from PPC
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
         // human readable prefix to bench32 address
-        bech32_hrp = "tpc";
+        bech32_hrp = "tsl";
 
         vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_test), std::end(chainparams_seed_test));
 
@@ -293,12 +360,13 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data as of block a40f64181ee4a3bedda2eae0107d9da0e049fe285b6e6e2a7f1f11697f22c7ed (height 500000)
-            1664282408, // * UNIX timestamp of last known number of transactions
-            980877,     // * total number of transactions between genesis and that timestamp
+            // Data as of block 00000079bf04c6ef23a0a24a7ad7ffff984ab4e1d396d261cfa958203b2bf290 (height 140000)
+            // TODO: estimated, see above.
+            1685056582, // * UNIX timestamp of last known number of transactions
+            168000,     // * total number of transactions between genesis and that timestamp
 
                         //   (the tx=... number in the SetBestChain debug.log lines)
-            0.003082068 // * estimated number of transactions per second after that timestamp
+            0.013 // * estimated number of transactions per second after that timestamp
                         //   980877/(1664282408-1346029522) = 0.003082068
 
         };
@@ -306,7 +374,7 @@ public:
 };
 
 /**
- * Signet: test network with an additional consensus parameter (see BIP325).
+ * Signet: test network with an additional consensus parameter (see BIP325). // TODO signet & regtest not implemented for SLM!
  */
 class SigNetParams : public CChainParams {
 public:
