@@ -39,12 +39,12 @@ static constexpr unsigned int LOCKTIME_MEDIAN_TIME_PAST = (1 << 1);
 
 //Rounds down the burn hash for all hashes after (or equalling) timestamp 1402314985, not really needed though
 // has became a legacy thing due to the burn_hash_intermediate
-const u32int BURN_ROUND_DOWN = 1402314985; //Mon, 09 Jun 2014 11:56:25 GMT
+const uint32_t BURN_ROUND_DOWN = 1402314985; //Mon, 09 Jun 2014 11:56:25 GMT  // was u32int
 
 //Adjusts the trust values for PoW and PoB blocks
-const uint64 CHAINCHECKS_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT
+const uint32_t CHAINCHECKS_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT // was uint64
 
 //Adjusts PoB and PoS targets
-const uint64 POB_POS_TARGET_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT
+const uint32_t POB_POS_TARGET_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT // was uint64
 
 #endif // BITCOIN_CONSENSUS_CONSENSUS_H

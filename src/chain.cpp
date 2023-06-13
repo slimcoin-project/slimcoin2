@@ -122,8 +122,8 @@ void CBlockIndex::BuildSkip()
         pskip = pprev->GetAncestor(GetSkipHeight(nHeight));
 }
 
-arith_uint256 GetBlockTrust(const CBlockIndex& block)
-{
+/*arith_uint256 GetBlockTrust(const CBlockIndex& block)
+/*{
     arith_uint256 bnTarget;
     bool fNegative;
     bool fOverflow;
@@ -135,6 +135,114 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block)
     // as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
     // or ~bnTarget / (bnTarget+1) + 1.
     return block.IsProofOfStake() ? (~bnTarget / (bnTarget + 1)) + 1 : 1;
+}*/
+
+//CBigNum CBlockIndex::GetBlockTrust() const
+// as call is modified in PPC, we add block.X or block->X to IsProofOfStake/IsProofOfBurn, nBits, pprev
+arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
+{
+    /* New protocol */
+    if (fTestNet || block->GetBlockTime() > CHAINCHECKS_SWITCH_TIME)
+    {
+
+        arith_uint256 bnTarget; // was CBigNum
+        // bnTarget.SetCompact(IsProofOfBurn() ? nBurnBits : nBits); // original SLM, temporarily deactivated PoB
+        bool fNegative;
+        bool fOverflow;
+        bnTarget.SetCompact(block.nBits, &fNegative, &fOverflow);
+        if (fNegative || fOverflow || bnTarget == 0)
+            return 0;
+
+        /*if (bnTarget <= 0)
+            return 0;*/ // replaced by code before.
+
+        // Calculate work amount for block
+        // uint256 nBlkBase = IsProofOfBurn() ? nPoBBase : nPoWBase; // original SLM, PoB deactivated // IsProofOfBurn -> block.IsProofOfBurn
+        arith_uint256 nBlkBase = nPoWBase; // modified SLM // TODO: where is nPoWBase
+        // CBigNum nBlkTrust = CBigNum(nBlkBase) / (bnTarget + 1); // original SLM
+        arith_uint256 nBlkTrust = nBlkBase / (bnTarget + 1);
+
+        // Set nPowTrust to 1 if we are checking PoS block or PoW difficulty is too low
+        nBlkTrust = (block.IsProofOfStake() || nBlkTrust < 1) ? 1 : nBlkTrust;
+
+        // Return nBlkTrust for the first 12 blocks
+        if (block->pprev == NULL || block->pprev->nHeight < 12)
+            return nBlkTrust;
+
+        const CBlockIndex* currentIndex = block->pprev;
+
+        if (block.IsProofOfStake())
+        {
+            arith_uint256 bnNewTrust = (arith_uint256(1)<<256) / (bnTarget + 1);
+
+            // Return 1/3 of score if parent block is not the PoW block
+            if (!block->pprev->IsProofOfWork())
+                return bnNewTrust / 3;
+
+            int nPoWCount = 0;
+
+            // Check last 12 blocks type
+            while (block->pprev->nHeight - currentIndex->nHeight < 12)
+            {
+                if (currentIndex->IsProofOfWork())
+                    nPoWCount++;
+                currentIndex = currentIndex->pprev;
+            }
+
+            // Return 1/3 of score if less than 3 PoW blocks found
+            if (nPoWCount < 3)
+                return bnNewTrust / 3;
+
+            return bnNewTrust;
+        }
+        else
+        {
+            arith_uint256 bnLastBlockTrust = arith_uint256(block->pprev->bnChainTrust - block->pprev->pprev->bnChainTrust);
+
+            // Return nBlkTrust + 2/3 of previous block score if two parent blocks are not PoS blocks
+            if (!(block->pprev->IsProofOfStake() && block->pprev->pprev->IsProofOfStake()))
+                return nBlkTrust + (2 * bnLastBlockTrust / 3);
+
+            int nPoSCount = 0;
+
+            // Check last 12 blocks type
+            while(block->pprev->nHeight - currentIndex->nHeight < 12)
+            {
+                if (currentIndex->IsProofOfStake())
+                    nPoSCount++;
+                currentIndex = currentIndex->pprev;
+            }
+
+            // Return nBlkTrust + 2/3 of previous block score if less than 7 PoS blocks found
+            if (nPoSCount < 7)
+                return nBlkTrust + (2 * bnLastBlockTrust / 3);
+
+            // bnTarget.SetCompact(IsProofOfBurn() ? pprev->nBurnBits : pprev->nBits); // PoB disabled
+            bnTarget.SetCompact(block->pprev->nBits);
+
+            if (bnTarget <= 0)
+                return 0;
+
+            arith_uint256 bnNewTrust = (arith_uint256(1) << 256) / (bnTarget + 1);
+
+            // Return nBlkTrust + full trust score for previous block nBits or nBurnBits
+            return nBlkTrust + bnNewTrust;
+        }
+
+    }
+    else
+    {
+
+        /* Old protocol */
+
+        arith_uint256 bnTarget;
+        bnTarget.SetCompact(block.nBits);
+
+        if (bnTarget <= 0)
+            return 0;
+
+        return (block.IsProofOfStake() ? (*arith_uint256(1) << 256) / (bnTarget + 1) : 1);
+    }
 }
 
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params& params)
