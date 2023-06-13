@@ -241,7 +241,7 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
         if (bnTarget <= 0)
             return 0;
 
-        return (block.IsProofOfStake() ? (*arith_uint256(1) << 256) / (bnTarget + 1) : 1);
+        return (block.IsProofOfStake() ? (arith_uint256(1) << 256) / (bnTarget + 1) : 1);
     }
 }
 
