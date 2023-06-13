@@ -1258,6 +1258,7 @@ PackageMempoolAcceptResult ProcessNewPackage(CChainState& active_chainstate, CTx
 
 int64_t GetProofOfWorkReward(unsigned int nBits, uint32_t nTime)
 {
+    // SLM: seems PoW reward calculation is unchanged with respect to PPC.
     CBigNum bnSubsidyLimit = MAX_MINT_PROOF_OF_WORK;
     CBigNum bnTarget;
     bnTarget.SetCompact(nBits);
@@ -1294,8 +1295,12 @@ int64_t GetProofOfWorkReward(unsigned int nBits, uint32_t nTime)
 // peercoin: miner's coin stake is rewarded based on coin age spent (coin-days)
 int64_t GetProofOfStakeReward(int64_t nCoinAge, uint32_t nTime, uint64_t nMoneySupply)
 {
-    static int64_t nRewardCoinYear = CENT;  // creation amount per coin-year
-    int64_t nSubsidy = nCoinAge * 33 / (365 * 33 + 8) * nRewardCoinYear;
+
+    //static int64_t nRewardCoinYear = CENT;  // creation amount per coin-year
+    //int64_t nSubsidy = nCoinAge * 33 / (365 * 33 + 8) * nRewardCoinYear;
+    // SLM:
+    static int64_t nRewardCoinYear = nTime > POB_POS_TARGET_SWITCH_TIME ? (10 * CENT) : CENT;  // creation amount per coin-year
+    int64_t nSubsidy = nCoinAge * nRewardCoinYear * 33 / (365 * 33 + 8);
 
     if (IsProtocolV09(nTime)) {
         // rfc18
@@ -1447,7 +1452,7 @@ void CChainState::InvalidChainFound(CBlockIndex* pindexNew)
 
     LogPrintf("%s: invalid block=%s  height=%d  log2_trust=%.8g  moneysupply=%s  date=%s  moneysupply=%s\n", __func__,
       pindexNew->GetBlockHash().ToString(), pindexNew->nHeight,
-      log(pindexNew->nChainTrust.getdouble())/log(2.0), 
+      log(pindexNew->nChainTrust.getdouble())/log(2.0),
       FormatMoney(m_chain.Tip()->nMoneySupply),
       FormatISO8601DateTime(pindexNew->GetBlockTime()),
       FormatMoney(pindexNew->nMoneySupply));

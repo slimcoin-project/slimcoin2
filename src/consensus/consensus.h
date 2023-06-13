@@ -14,9 +14,11 @@ static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 4000000;
 /** The maximum allowed weight for a block, see BIP 141 (network rule) */
 static const unsigned int MAX_BLOCK_WEIGHT = 4000000;
 /** The maximum allowed number of signature check operations in a block (network rule) */
-static const int64_t MAX_BLOCK_SIGOPS_COST = 80000;
+static const int64_t MAX_BLOCK_SIGOPS_COST = 80000; // SLM originally has 1M/50, i.e. 20000. Due to weight increase * 4 it should be 80000 too.
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
-static const int COINBASE_MATURITY = 100;
+static const int COINBASE_MATURITY = 500; // PPC: 100
+
+// from here not changed.
 
 static const int WITNESS_SCALE_FACTOR = 4;
 
@@ -28,5 +30,21 @@ static const size_t MIN_SERIALIZABLE_TRANSACTION_WEIGHT = WITNESS_SCALE_FACTOR *
 static constexpr unsigned int LOCKTIME_VERIFY_SEQUENCE = (1 << 0);
 /** Use GetMedianTimePast() instead of nTime for end point timestamp. */
 static constexpr unsigned int LOCKTIME_MEDIAN_TIME_PAST = (1 << 1);
+
+// SLM minor protocol switches of 2014. Look if there's a better place to place these.
+// PPC protocol switch times are in kernel.cpp, but kernel.cpp should not be included in validation.cpp.
+////////////////////////////////
+//PATCHES
+////////////////////////////////
+
+//Rounds down the burn hash for all hashes after (or equalling) timestamp 1402314985, not really needed though
+// has became a legacy thing due to the burn_hash_intermediate
+const u32int BURN_ROUND_DOWN = 1402314985; //Mon, 09 Jun 2014 11:56:25 GMT
+
+//Adjusts the trust values for PoW and PoB blocks
+const uint64 CHAINCHECKS_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT
+
+//Adjusts PoB and PoS targets
+const uint64 POB_POS_TARGET_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT
 
 #endif // BITCOIN_CONSENSUS_CONSENSUS_H

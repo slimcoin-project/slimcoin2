@@ -57,22 +57,6 @@ static CBlock CreateGenesisBlock(uint32_t nTimeTx, uint32_t nTimeBlock, uint32_t
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTimeTx, nTimeBlock, nNonce, nBits, nVersion, genesisReward);
 }
 
-/**
-* Param change in SLM
-*/
-static inline int64 getTargetTimespan(s32int lastNHeight)
-{
-    //the nTargetTimespan value cannot be too small since in the GetNextTargetRequired function,
-    // the nActualSpacing variable could be negative, but we do not want to be multiplying
-    // bnNew by a negative number in: bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
-
-    //from 4259 and on, use new 6 hour retarget time
-    if (lastNHeight >= 4258)
-        return 6 * 60 * 60;
-    else
-        return 30 * 60; //old 30 minute retarget time
-}
-
 
 /**
  * Main network on which people trade goods and services.
@@ -91,21 +75,23 @@ public:
         consensus.bnInitialHashTarget = uint256S("000007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 21;
         // consensus.bnInitialHashTarget = uint256S("0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~arith_uint256(0) >> 40;
 
-        consensus.nTargetTimespan = getTargetTimespan(lastNHeight); // TODO need additional parameter
+        // consensus.nTargetTimespan = getTargetTimespan(lastNHeight);
+        consensus.nTargetTimespan = 6 * 60 * 60 // SLM: from Block 4258 on
+        consensus.nTargetTimespanBefore4258 = 30 * 60 // SLM: until block 4257
         // consensus.nTargetTimespan = 7 * 24 * 60 * 60;  // one week
         consensus.nStakeTargetSpacing = 90; // SLM: 90 second block spacing (STAKE_TARGET_SPACING)
         // consensus.nStakeTargetSpacing = 10 * 60; // 10-minute block spacing
         consensus.nTargetSpacingWorkMax = 10 * consensus.nStakeTargetSpacing; // SLM: 15 min
         // consensus.nTargetSpacingWorkMax = 12 * consensus.nStakeTargetSpacing; // 2-hour
-        consensus.nPoWTargetSpacing = min(nTargetSpacingWorkMax, consensus.nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight)); // TODO
-        //consensus.nPowTargetSpacing = consensus.nStakeTargetSpacing;
+        // consensus.nPowTargetSpacing = min(nTargetSpacingWorkMax, consensus.nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+        consensus.nPowTargetSpacing = consensus.nStakeTargetSpacing; // SLM: we leave this unchanged, let's see what happens.
         consensus.nStakeMinAge = 60 * 60 * 24 * 7; // SLM: minimum age for coin age = 7 days
         // consensus.nStakeMinAge = 60 * 60 * 24 * 30; // minimum age for coin age
         consensus.nStakeMaxAge = 60 * 60 * 24 * 90; // SLM like PPC
         consensus.nModifierInterval = 6 * 60 * 60; // Modifier interval: time to elapse before new modifier is computed - SLM like PPC
         consensus.nCoinbaseMaturity = 500; // SLM like PPC
 
-        consensus.fPowAllowMinDifficultyBlocks = false; // TODO: not in SLM, perhaps set to true?
+        consensus.fPowAllowMinDifficultyBlocks = false; // should be ok this way.
         consensus.fPowNoRetargeting = false; // TODO: not in SLM, perhaps set to true?
         consensus.nRuleChangeActivationThreshold = 1815; // 90% of 2016 - TODO: probably softfork-related
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing - TODO: probably softfork-related
@@ -329,7 +315,8 @@ public:
         // human readable prefix to bench32 address
         bech32_hrp = "tsl";
 
-        vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_test), std::end(chainparams_seed_test));
+        // vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_test), std::end(chainparams_seed_test));
+        vFixedSeeds.clear();
 
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;

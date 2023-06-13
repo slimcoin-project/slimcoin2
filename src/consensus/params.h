@@ -80,6 +80,7 @@ struct Params {
     int64_t nStakeTargetSpacing;
     int64_t nTargetSpacingWorkMax;
     int64_t nTargetTimespan;
+    int64_t nTargetTimespanBefore4258; // SLM
     int64_t nStakeMinAge;
     int64_t nStakeMaxAge;
     int64_t nModifierInterval;

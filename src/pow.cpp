@@ -14,6 +14,21 @@
 #include <chainparams.h>
 #include <kernel.h>
 
+/**
+* Param change in SLM
+*/
+static inline int64 getTargetTimespan(s32int lastNHeight)
+{
+    //the nTargetTimespan value cannot be too small since in the GetNextTargetRequired function,
+    // the nActualSpacing variable could be negative, but we do not want to be multiplying
+    // bnNew by a negative number in: bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+
+    //from 4259 and on, use new 6 hour retarget time
+    if (lastNHeight >= 4258)
+        return params.nTargetTimespan;
+    else
+        return params.nTargetTimespanBefore4258; //old 30 minute retarget time
+
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake, const Consensus::Params& params)
 {
     if (pindexLast == nullptr)
@@ -50,7 +65,8 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
             }
         }
 
-        int64_t nInterval = params.nTargetTimespan / nTargetSpacing;
+        // int64_t nInterval = params.nTargetTimespan / nTargetSpacing; // PPC original
+        int64_t nInterval = getTargetTimespan(pindexLast->nHeight) / nTargetSpacing; // SLM: see above, changed from block 4258 on
         bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
         bnNew /= ((nInterval + 1) * nTargetSpacing);
         }
