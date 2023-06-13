@@ -166,23 +166,23 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
         nBlkTrust = (block.IsProofOfStake() || nBlkTrust < 1) ? 1 : nBlkTrust;
 
         // Return nBlkTrust for the first 12 blocks
-        if (block->pprev == NULL || block->pprev->nHeight < 12)
+        if (block.pprev == NULL || block.pprev->nHeight < 12)
             return nBlkTrust;
 
-        const CBlockIndex* currentIndex = block->pprev;
+        const CBlockIndex* currentIndex = block.pprev;
 
         if (block.IsProofOfStake())
         {
             arith_uint256 bnNewTrust = (arith_uint256(1)<<256) / (bnTarget + 1);
 
             // Return 1/3 of score if parent block is not the PoW block
-            if (!block->pprev->IsProofOfWork())
+            if (!block.pprev->IsProofOfWork())
                 return bnNewTrust / 3;
 
             int nPoWCount = 0;
 
             // Check last 12 blocks type
-            while (block->pprev->nHeight - currentIndex->nHeight < 12)
+            while (block.pprev->nHeight - currentIndex->nHeight < 12)
             {
                 if (currentIndex->IsProofOfWork())
                     nPoWCount++;
@@ -197,16 +197,16 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
         }
         else
         {
-            arith_uint256 bnLastBlockTrust = arith_uint256(block->pprev->bnChainTrust - block->pprev->pprev->bnChainTrust);
+            arith_uint256 bnLastBlockTrust = arith_uint256(block.pprev->bnChainTrust - block.pprev->pprev->bnChainTrust);
 
             // Return nBlkTrust + 2/3 of previous block score if two parent blocks are not PoS blocks
-            if (!(block->pprev->IsProofOfStake() && block->pprev->pprev->IsProofOfStake()))
+            if (!(block.pprev->IsProofOfStake() && block.pprev->pprev->IsProofOfStake()))
                 return nBlkTrust + (2 * bnLastBlockTrust / 3);
 
             int nPoSCount = 0;
 
             // Check last 12 blocks type
-            while(block->pprev->nHeight - currentIndex->nHeight < 12)
+            while(block.pprev->nHeight - currentIndex->nHeight < 12)
             {
                 if (currentIndex->IsProofOfStake())
                     nPoSCount++;
@@ -218,7 +218,7 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
                 return nBlkTrust + (2 * bnLastBlockTrust / 3);
 
             // bnTarget.SetCompact(IsProofOfBurn() ? pprev->nBurnBits : pprev->nBits); // PoB disabled
-            bnTarget.SetCompact(block->pprev->nBits);
+            bnTarget.SetCompact(block.pprev->nBits);
 
             if (bnTarget <= 0)
                 return 0;
