@@ -17,7 +17,7 @@
 /**
 * Param change in SLM
 */
-static inline int64 getTargetTimespan(s32int lastNHeight)
+static inline int64_t getTargetTimespan(int lastNHeight, const Consensus::Params& params) // s32int -> int
 {
     //the nTargetTimespan value cannot be too small since in the GetNextTargetRequired function,
     // the nActualSpacing variable could be negative, but we do not want to be multiplying
@@ -28,6 +28,7 @@ static inline int64 getTargetTimespan(s32int lastNHeight)
         return params.nTargetTimespan;
     else
         return params.nTargetTimespanBefore4258; //old 30 minute retarget time
+}
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake, const Consensus::Params& params)
 {
@@ -66,7 +67,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
         }
 
         // int64_t nInterval = params.nTargetTimespan / nTargetSpacing; // PPC original
-        int64_t nInterval = getTargetTimespan(pindexLast->nHeight) / nTargetSpacing; // SLM: see above, changed from block 4258 on
+        int64_t nInterval = getTargetTimespan(pindexLast->nHeight, params) / nTargetSpacing; // SLM: see above, changed from block 4258 on
         bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
         bnNew /= ((nInterval + 1) * nTargetSpacing);
         }

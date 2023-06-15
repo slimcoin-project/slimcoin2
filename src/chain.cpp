@@ -138,11 +138,14 @@ void CBlockIndex::BuildSkip()
 }*/
 
 //CBigNum CBlockIndex::GetBlockTrust() const
-// as call is modified in PPC, we add block.X or block->X to IsProofOfStake/IsProofOfBurn, nBits, pprev
-arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
+// as call is modified in PPC, we add block.X to IsProofOfStake/IsProofOfBurn, nBits, pprev
+// SLM version is heavily modified, needs additional params
+arith_uint256 GetBlockTrust(const CBlockIndex& block)
 {
     /* New protocol */
-    if (fTestNet || block->GetBlockTime() > CHAINCHECKS_SWITCH_TIME)
+    // bool fTestNet = params.strNetworkID != CBaseChainParams::MAIN // this seems to be the "official" way to look if it's mainnet or testnet
+    bool fTestNet = true; // dirty workaround to get the program compiled first time, it anyway will only read testnet due to lack of dcrypt.
+    if (fTestNet || block.GetBlockTime() > CHAINCHECKS_SWITCH_TIME) // declared in chain.h
     {
 
         arith_uint256 bnTarget; // was CBigNum
@@ -157,10 +160,10 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
             return 0;*/ // replaced by code before.
 
         // Calculate work amount for block
-        // uint256 nBlkBase = IsProofOfBurn() ? nPoBBase : nPoWBase; // original SLM, PoB deactivated // IsProofOfBurn -> block.IsProofOfBurn
-        arith_uint256 nBlkBase = nPoWBase; // modified SLM // TODO: where is nPoWBase
+        // uint256 nBlkBase = IsProofOfBurn() ? nPoBBase : nPoWBase; // original SLM // IsProofOfBurn -> block.IsProofOfBurn
+        uint256 nBlkBase = nPoWBaseTestnet; // modified SLM, PoB deactivated, only Testnet supported.
         // CBigNum nBlkTrust = CBigNum(nBlkBase) / (bnTarget + 1); // original SLM
-        arith_uint256 nBlkTrust = nBlkBase / (bnTarget + 1);
+        arith_uint256 nBlkTrust = UintToArith256(nBlkBase) / (bnTarget + 1);
 
         // Set nPowTrust to 1 if we are checking PoS block or PoW difficulty is too low
         nBlkTrust = (block.IsProofOfStake() || nBlkTrust < 1) ? 1 : nBlkTrust;
@@ -197,7 +200,7 @@ arith_uint256 GetBlockTrust(const CBlockIndex& block) // SLM
         }
         else
         {
-            arith_uint256 bnLastBlockTrust = arith_uint256(block.pprev->bnChainTrust - block.pprev->pprev->bnChainTrust);
+            arith_uint256 bnLastBlockTrust = arith_uint256(block.pprev->nChainTrust - block.pprev->pprev->nChainTrust); // bnChainTrust -> nChainTrust
 
             // Return nBlkTrust + 2/3 of previous block score if two parent blocks are not PoS blocks
             if (!(block.pprev->IsProofOfStake() && block.pprev->pprev->IsProofOfStake()))

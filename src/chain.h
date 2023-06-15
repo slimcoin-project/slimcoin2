@@ -41,6 +41,16 @@ static constexpr int64_t TIMESTAMP_WINDOW = MAX_FUTURE_BLOCK_TIME_PREV9;
  */
 static constexpr int64_t MAX_BLOCK_TIME_GAP = 90 * 60;
 
+/**
+ * SLM: Adjusts the trust values for PoW and PoB blocks
+ */
+const uint32_t CHAINCHECKS_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT // was uint64
+const uint256 nPoWBase = uint256S("000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // nPoWBase(~uint256(0) >> 24);
+const uint256 nPoWBaseTestnet = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // nPoWBase(~uint256(0) >> 20);
+const uint256 nPoBBase = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+
+
 extern RecursiveMutex cs_main;
 
 class CBlockFileInfo

@@ -24,35 +24,38 @@ using namespace std;
 unsigned int nProtocolV03SwitchTime     = 1363800000;
 unsigned int nProtocolV03TestSwitchTime = 1359781000;
 // Protocol switch time of v0.4 kernel protocol
-unsigned int nProtocolV04SwitchTime     = 1399300000;
-unsigned int nProtocolV04TestSwitchTime = 1395700000;
+unsigned int nProtocolV04SwitchTime     = 2436585981; // 1399300000; // slm: from original code
+unsigned int nProtocolV04TestSwitchTime = 2395700000; // 1395700000; // slm: from original code
 // Protocol switch time of v0.5 kernel protocol
-unsigned int nProtocolV05SwitchTime     = 1461700000;
-unsigned int nProtocolV05TestSwitchTime = 1447700000;
+unsigned int nProtocolV05SwitchTime     = 2461700000; // 1461700000; // slm: from original code
+unsigned int nProtocolV05TestSwitchTime = 2447700000; // 1447700000; // slm: from original code
 // Protocol switch time of v0.6 kernel protocol
 // supermajority hardfork: actual fork will happen later than switch time
-const unsigned int nProtocolV06SwitchTime     = 1513050000; // Tue 12 Dec 03:40:00 UTC 2017
-const unsigned int nProtocolV06TestSwitchTime = 1508198400; // Tue 17 Oct 00:00:00 UTC 2017
+const unsigned int nProtocolV06SwitchTime     = 2500000000; // 1513050000; // Tue 12 Dec 03:40:00 UTC 2017 // from here on: dummy values.
+const unsigned int nProtocolV06TestSwitchTime = 2500000000; // 1508198400; // Tue 17 Oct 00:00:00 UTC 2017
 // Protocol switch time for 0.7 kernel protocol
-const unsigned int nProtocolV07SwitchTime     = 1552392000; // Tue 12 Mar 12:00:00 UTC 2019
-const unsigned int nProtocolV07TestSwitchTime = 1541505600; // Tue 06 Nov 12:00:00 UTC 2018
+const unsigned int nProtocolV07SwitchTime     = 2600000000; // 1552392000; // Tue 12 Mar 12:00:00 UTC 2019
+const unsigned int nProtocolV07TestSwitchTime = 2600000000; // 1541505600; // Tue 06 Nov 12:00:00 UTC 2018
 // Switch time for new BIPs from bitcoin 0.16.x
-const uint32_t nBTC16BIPsSwitchTime           = 1569931200; // Tue 01 Oct 12:00:00 UTC 2019
-const uint32_t nBTC16BIPsTestSwitchTime       = 1554811200; // Tue 09 Apr 12:00:00 UTC 2019
+const uint32_t nBTC16BIPsSwitchTime           = 2700000000; // 1569931200; // Tue 01 Oct 12:00:00 UTC 2019
+const uint32_t nBTC16BIPsTestSwitchTime       = 2700000000; // 1554811200; // Tue 09 Apr 12:00:00 UTC 2019
 // Protocol switch time for v0.9 kernel protocol
-const unsigned int nProtocolV09SwitchTime     = 1591617600; // Mon  8 Jun 12:00:00 UTC 2020
-const unsigned int nProtocolV09TestSwitchTime = 1581940800; // Mon 17 Feb 12:00:00 UTC 2020
+const unsigned int nProtocolV09SwitchTime     = 2800000000; // 1591617600; // Mon  8 Jun 12:00:00 UTC 2020
+const unsigned int nProtocolV09TestSwitchTime = 2800000000; // 1581940800; // Mon 17 Feb 12:00:00 UTC 2020
 // Protocol switch time for v10 kernel protocol
-const unsigned int nProtocolV10SwitchTime     = 1635768000; // Mon  1 Nov 12:00:00 UTC 2021
-const unsigned int nProtocolV10TestSwitchTime = 1625140800; // Thu  1 Jul 12:00:00 UTC 2021
+const unsigned int nProtocolV10SwitchTime     = 2900000000; // 1635768000; // Mon  1 Nov 12:00:00 UTC 2021
+const unsigned int nProtocolV10TestSwitchTime = 2900000000; // 1625140800; // Thu  1 Jul 12:00:00 UTC 2021
 // Protocol switch time for v12 kernel protocol
-const unsigned int nProtocolV12SwitchTime     = 1681732800; // Mon 17 Apr 12:00:00 UTC 2023
-const unsigned int nProtocolV12TestSwitchTime = 1669636800; // Mon 28 Nov 12:00:00 UTC 2022
+const unsigned int nProtocolV12SwitchTime     = 3000000000; // 1681732800; // Mon 17 Apr 12:00:00 UTC 2023
+const unsigned int nProtocolV12TestSwitchTime = 3000000000; // 1669636800; // Mon 28 Nov 12:00:00 UTC 2022
 
 // Hard checkpoints of stake modifiers to ensure they are deterministic
 static std::map<int, unsigned int> mapStakeModifierCheckpoints =
     boost::assign::map_list_of
-    ( 0, 0x0e00670bu )
+    ( 0, 0x00e00670b )
+    ;
+
+    /*( 0, 0x0e00670bu )
     ( 19080, 0xad4e4d29u )
     ( 30583, 0xdc7bf136u )
     ( 99999, 0xf555cfd2u )
@@ -65,11 +68,14 @@ static std::map<int, unsigned int> mapStakeModifierCheckpoints =
     (479189, 0xe04fb8e0u )
     (504051, 0x459f5a16u )
     (589659, 0xbd02492au )
-    ;
+    ;*/
 
+// SLM: for now use same checkpoint for mainnet as for testnet (no checkpoints specified in testnet).
 static std::map<int, unsigned int> mapStakeModifierTestnetCheckpoints =
     boost::assign::map_list_of
-    ( 0, 0x0e00670bu )
+    ( 0, 0x00e00670b )
+    ;
+    /*( 0, 0x0e00670bu )
     ( 19080, 0x3711dc3au )
     ( 30583, 0xb480fadeu )
     ( 99999, 0x9a62eaecu )
@@ -81,7 +87,7 @@ static std::map<int, unsigned int> mapStakeModifierTestnetCheckpoints =
     (412691, 0x93138e67u )
     (441299, 0x03e195cbu )
     (442735, 0xe42d94feu )
-    ;
+    ;*/
 
 // Whether the given coinstake is subject to new v0.3 protocol
 bool IsProtocolV03(unsigned int nTimeCoinStake)
@@ -401,7 +407,7 @@ static bool GetKernelStakeModifierV05(CBlockIndex* pindexPrev, unsigned int nTim
         else
             return false;
     }
-    // loop to find the stake modifier earlier by 
+    // loop to find the stake modifier earlier by
     // (nStakeMinAge minus a selection interval)
     while (nStakeModifierTime + params.nStakeMinAge - nStakeModifierSelectionInterval >(int64_t) nTimeTx)
     {
@@ -492,7 +498,7 @@ static bool GetKernelStakeModifier(CBlockIndex* pindexPrev, uint256 hashBlockFro
 // this ensures that the chance of getting a coinstake is proportional to the
 // amount of coin age one owns.
 // The reason this hash is chosen is the following:
-//   nStakeModifier: 
+//   nStakeModifier:
 //       (v0.5) uses dynamic stake modifier around 21 days before the kernel,
 //              versus static stake modifier about 9 days after the staked
 //              coin (txPrev) used in v0.3
@@ -501,7 +507,7 @@ static bool GetKernelStakeModifier(CBlockIndex* pindexPrev, uint256 hashBlockFro
 //       (v0.2) nBits (deprecated): encodes all past block timestamps
 //   txPrev.block.nTime: prevent nodes from guessing a good timestamp to
 //                       generate transaction for future advantage
-//   txPrev.offset: offset of txPrev inside block, to reduce the chance of 
+//   txPrev.offset: offset of txPrev inside block, to reduce the chance of
 //                  nodes generating coinstake at the same time
 //   txPrev.nTime: reduce the chance of nodes generating coinstake at the same
 //                 time
@@ -573,7 +579,7 @@ bool CheckStakeKernelHash(unsigned int nBits, CBlockIndex* pindexPrev, const CBl
         if (IsProtocolV03(nTimeTx)) {
             const CBlockIndex* pindexTmp = chainstate.m_blockman.LookupBlockIndex(blockFrom.GetHash());
             LogPrintf("CheckStakeKernelHash() : using modifier 0x%016x at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
-                nStakeModifier, nStakeModifierHeight, 
+                nStakeModifier, nStakeModifierHeight,
                 FormatISO8601DateTime(nStakeModifierTime),
                 pindexTmp->nHeight,
                 FormatISO8601DateTime(blockFrom.GetBlockTime()));

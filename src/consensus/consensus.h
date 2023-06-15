@@ -41,8 +41,8 @@ static constexpr unsigned int LOCKTIME_MEDIAN_TIME_PAST = (1 << 1);
 // has became a legacy thing due to the burn_hash_intermediate
 const uint32_t BURN_ROUND_DOWN = 1402314985; //Mon, 09 Jun 2014 11:56:25 GMT  // was u32int
 
-//Adjusts the trust values for PoW and PoB blocks
-const uint32_t CHAINCHECKS_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT // was uint64
+//Adjusts the trust values for PoW and PoB blocks => moved to chain.h
+// const uint32_t CHAINCHECKS_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT // was uint64
 
 //Adjusts PoB and PoS targets
 const uint32_t POB_POS_TARGET_SWITCH_TIME = 1407110400; //Mon, 04 Aug 2014 00:00:00 GMT // was uint64

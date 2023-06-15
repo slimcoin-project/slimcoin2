@@ -68,6 +68,9 @@ struct Params {
     uint256 nMinimumChainWork;
     /** By default assume that the signatures in ancestors of this block are valid */
     uint256 defaultAssumeValid;
+    /** SLM specific parameters */
+    //uint256 nPoWBase;
+    //uint256 nPoBBase;
 
     /**
      * If true, witness commitments contain a payload equal to a Bitcoin Script solution
